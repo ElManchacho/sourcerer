@@ -7,8 +7,13 @@ import { AppComponent } from './app.component';
 import { MainComponent } from './main/main.component';
 import { GraphQLModule } from './graphql.module';
 import {HttpLink} from 'apollo-angular/http';
-import {InMemoryCache} from '@apollo/client/core'
-import { HttpClientModule } from '@angular/common/http';
+import {createHttpLink, InMemoryCache} from '@apollo/client/core'
+import { HttpClientModule, HttpHeaders } from '@angular/common/http';
+import {environment} from '../environments/environment';
+
+const token = environment.gitToken;
+
+const uri = environment.gitUri;
 
 @NgModule({
   declarations: [
@@ -25,11 +30,13 @@ import { HttpClientModule } from '@angular/common/http';
     {
       provide: APOLLO_OPTIONS,
       useFactory: (httpLink: HttpLink) => {
+        const cache = new InMemoryCache();
         return {
-          cache: new InMemoryCache(),
           link: httpLink.create({
-            uri: 'https://48p1r2roz4.sse.codesandbox.io',
+            uri: uri,
+            headers:new HttpHeaders().set('Authorization',`Bearer ${token}` )
           }),
+          cache
         };
       },
       deps: [HttpLink],
