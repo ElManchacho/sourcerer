@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import {Apollo, gql} from 'apollo-angular';
+import { Subscription } from 'rxjs';
+import { GraphqlService } from '../service/graphql.service';
 
 @Component({
   selector: 'app-main',
@@ -9,30 +10,23 @@ import {Apollo, gql} from 'apollo-angular';
 
 
 export class MainComponent implements OnInit {
-  bio:  string | undefined;
+
+  private getBioSubscription:Subscription | undefined;
+
   loading = true;
   error: any;
+  nom:string="Not loaded";
+  data:any;
 
-  constructor(private apollo: Apollo) {}
+  constructor(public service: GraphqlService) {}
 
-  ngOnInit() {
-    this.apollo
-      .watchQuery({
-        query: gql`
-        {
-          user(login: "Majdi") {
-            id
-            bio
-          }
-        }        
-        `,
-      })
-      .valueChanges.subscribe((result: any) => {
-        console.log(result?.data);
-        this.bio = result?.data?.user.bio;
-        this.loading = result.loading;
-        this.error = result.error;
-      });
+  ngOnInit():void {
+    this.getBioSubscription = this.service.getProfileData().valueChanges.subscribe(result=>
+      {
+        this.data = result.data;
+        console.log(this.data.user)
+      }
+    );
   }
 
 }

@@ -1,0 +1,14 @@
+.headerBg{
+    background-color: rgb(141, 235, 195);
+}
+
+.headerTitled{
+    margin: 5%;
+    font-weight: bold;
+    color: rgb(85, 87, 86);
+}
+
+.link{
+    text-decoration: underline;
+    color: rgb(85, 87, 86);
+}

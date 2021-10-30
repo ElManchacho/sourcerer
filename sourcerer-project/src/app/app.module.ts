@@ -10,6 +10,8 @@ import {HttpLink} from 'apollo-angular/http';
 import {createHttpLink, InMemoryCache} from '@apollo/client/core'
 import { HttpClientModule, HttpHeaders } from '@angular/common/http';
 import {environment} from '../environments/environment';
+import { HeaderComponent } from './globalPageComponents/header/header.component';
+import { FooterComponent } from './globalPageComponents/footer/footer.component';
 
 const token = environment.gitToken;
 
@@ -18,7 +20,9 @@ const uri = environment.gitUri;
 @NgModule({
   declarations: [
     AppComponent,
-    MainComponent
+    MainComponent,
+    HeaderComponent,
+    FooterComponent
   ],
   imports: [
     BrowserModule,

@@ -1,9 +1,16 @@
-<div *ngIf="loading">
-    Loading...
+<div class="contentMiddled">
+  <br/>
+  <div>
+    <p>Share your profile on:</p>
+    <a class="link" href="https://www.linkedin.com/">LinkedIn</a>&nbsp;
+    <a class="link" href="https://twitter.com/?lang=fr">Twitter</a>&nbsp;
+    <a class="link" href="https://fr-fr.facebook.com/">Facebook</a>&nbsp;
+    <a class="link" href="https://webdriver.io/docs/api/element/getHTML/">GetHTML</a>
   </div>
-  <div *ngIf="error">
-    Error :(
+  <br/>
+  <br/>
+  <br/>
+  <div>
+    <h1 class="name">{{data.user.name}}</h1>
   </div>
-  <div *ngIf="bio">
-    <h1>{{bio}}</h1>
-  </div>
+</div>
