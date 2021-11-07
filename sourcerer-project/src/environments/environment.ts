@@ -4,7 +4,7 @@
 
 export const environment = {
   production: false,
-  gitToken : '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',
+  gitToken : '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',
   gitUri : 'https://api.github.com/graphql', // <-- add the URL of the GraphQL server here => https://github.com/settings/tokens
 };
 

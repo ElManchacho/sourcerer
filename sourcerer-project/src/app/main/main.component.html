@@ -10,7 +10,104 @@
   <br/>
   <br/>
   <br/>
+
   <div>
-    <h1 class="name">{{data.user.name}}</h1>
+    <table style="white-space: nowrap;">
+
+      <tr>
+
+        <td>
+          <h1 class="name">{{dataUser.name}}</h1>
+        </td>
+
+        <td style="padding-left: 10%;">
+          <br/>
+          <p>Craftsman at {{dataUser.company}}.</p>
+          <p>{{dataCompany.organization.location}}</p>
+        </td>
+
+      </tr>
+    </table>
+
+    <br/>
+
+    <table class="info">
+      <tr>
+        <td class="pictureTd">
+          <img class="roundedPicture"
+          src="{{dataUser.avatarUrl}}"
+          alt="Profile picture">
+        </td>
+        <td>
+          <div class="infoContainer1">
+            Commits
+          
+            <br/>
+            {{totalCommits}}
+            
+          </div>
+          
+        </td>
+        &nbsp;
+        <td>
+          <div class="infoContainer1">
+            Repos
+          
+            <br/>
+            {{dataUser.repositories.totalCount}}
+            
+          </div>
+
+        </td>
+        &nbsp;
+        <td>
+          <div class="infoContainer1">
+            Lines of code
+          
+            <br/>
+            Test
+            
+          </div>
+
+        </td>
+        &nbsp;
+        <td>
+          <div class="infoContainer2">
+            Followers
+          
+            <br/>
+            Test
+            
+          </div>
+
+        </td>
+        &nbsp;
+        <td>
+          <div class="infoContainer2">
+            Following
+          
+            <br/>
+            Test
+            
+          </div>
+          
+        </td>
+        &nbsp;
+        <td>
+          <div class="infoContainer3">
+            <select>
+              <option value="base">Refresh</option>
+            </select>
+            <br/>
+            <br/>
+          </div>
+        </td>
+      </tr>
+    </table>
   </div>
+
+
+
+
+
 </div>

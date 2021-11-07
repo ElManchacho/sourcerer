@@ -1,9 +1,41 @@
 .contentMiddled{
-    margin-left: 30%;
-    margin-right: 30%;
+    margin-left: 25%;
+    margin-right: 25%;
 }
 
 .name{
     font-weight: bold;
     font-size: 42px;
+}
+
+td .pictureTd{
+    size: 20%;
+}
+
+.roundedPicture{
+    border-radius: 50%;
+    width:30%; 
+    height:auto;
+}
+
+.info{
+    white-space: nowrap;
+}
+
+.info td{
+    margin: 2%;
+}
+
+.infoContainer1{
+    background-color: rgb(226,234,229);
+}
+
+.infoContainer2{
+    background-color: rgb(192,241,226);
+    margin: 2%;
+}
+
+.infoContainer3{
+    background-color: rgb(3,231,169);
+    margin: 2%;
 }
