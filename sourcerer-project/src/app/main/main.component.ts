@@ -34,7 +34,9 @@ export class MainComponent implements OnInit, OnDestroy {
   totalCommits: number = 0;
   repositoriesList: [any?] = []
   currentRepositoryToExplore: any
+  fileList:any[]=[]
   pathList:string[] = []
+  pathToAdd:string[] = []
 
   constructor(public service: GraphqlService) { }
 
@@ -74,9 +76,10 @@ export class MainComponent implements OnInit, OnDestroy {
           // Sources du repository
 
           this.getFolderSubscription = this.service.getRepository(this.userName, repositoryName).valueChanges.subscribe(repository =>{
-            this.currentRepositoryToExplore = repository.data
             this.pathList = []
+            this.fileList = []
             this.getAllFolderSources(repository.data,repositoryName)
+            console.log(this.repositoriesList)
           });
           
         });
@@ -85,24 +88,36 @@ export class MainComponent implements OnInit, OnDestroy {
     );
   }
 
-  getAllFolderSources(folder: any, repositoryName:string) {
+  getAllFolderSources(folder: any, repositoryName:string):any {
     folder.repository.object.entries.forEach((entry: any) => {
       if(entry.type=="tree")
       {
         this.pathList.push(entry.path)
       }
+      else if(entry.type==="blob")
+      {
+        this.fileList.push(entry)
+      }
     });
-
     this.pathList.forEach(path=>{
       this.getSpecificRepositorySubscription = this.service.getSpecificRepository(this.userName,repositoryName,path).valueChanges.subscribe((subfolder:any)=>{
-        let subfolderData = subfolder.data
-        //this.separateFoldersFromFiles(subfolderData,repositoryName)
+        subfolder.data.repository.object.entries.forEach((entry:any) => {
+          if(entry.type=="tree")
+          {
+            this.pathList.push(entry.path)
+          }
+          else if(entry.type==="blob")
+          {
+            this.fileList.push(entry)
+          }
+        });
       })
     })
+    // Erreur dans l'affectation des src
+    this.repositoriesList.push({name:repositoryName, srcList:this.pathList, fileList:this.fileList})
     
-    this.repositoriesList.push({name:repositoryName,pathList:this.pathList})
-    console.log(this.repositoriesList)
   }
+
 
   ngOnDestroy() {
     this.getBioSubscription?.unsubscribe();

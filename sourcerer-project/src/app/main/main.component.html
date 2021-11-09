@@ -76,7 +76,7 @@
             Followers
           
             <br/>
-            {{dataUser.followers.totalCount}}
+            Test
             
           </div>
 
@@ -87,7 +87,7 @@
             Following
           
             <br/>
-            {{dataUser.following.totalCount}}
+            Test
             
           </div>
           
@@ -106,3 +106,27 @@
     </table>
   </div>
 </div>
+
+<ul>
+  <li *ngFor="let repos of repositoriesList">
+    Repository : {{ repos.name }}
+    <br/>
+    Sources :
+    <ul >
+      <li *ngFor="let src of repos.srcList">
+        &nbsp;&nbsp;{{ src }}
+
+
+      </li>
+    </ul>
+    Fichiers :
+    <ul >
+      <li *ngFor="let file of repos.fileList">
+        &nbsp;&nbsp;{{ file.name }}
+
+
+      </li>
+    </ul>
+    <br/>
+  </li>
+</ul>
