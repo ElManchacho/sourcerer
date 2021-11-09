@@ -21,6 +21,12 @@ export class GraphqlService {
             repositories{
               totalCount
             }
+            following {
+              totalCount
+            }
+            followers {
+              totalCount
+            }
           }
         }               
         `
@@ -89,7 +95,7 @@ export class GraphqlService {
       .watchQuery({
         query: gql`
         {
-          repository(name: "${reposName}", owner: "${userLogin}") {
+          repository(owner: "${userLogin}", name: "${reposName}") {
             object(expression: "HEAD:") {
               ... on Tree {
                 entries {
@@ -104,50 +110,62 @@ export class GraphqlService {
                       entries {
                         name
                         type
-                        
+                        path
+                        object {
+                          ... on Blob {
+                            byteSize
+                          }
+                        }
                       }
                     }
                   }
+                  path
                 }
               }
             }
           }
-        }               
+        }            
         `
       });
   }
 
-  getSpecificRepository(userLogin:string,reposName:string,path:string)
+  getSpecificRepository(userLogin:string,reposName:string,path:string):any
   {
     return this.apollo
-      .watchQuery({
-        query: gql`
-        {
-          repository(name: "${reposName}", owner: "${userLogin}") {
-            object(expression: "HEAD:${path}") {
-              ... on Tree {
-                entries {
-                  name
-                  type
-                  object {
-                    ... on Blob {
-                      byteSize
-                      text
-                    }
-                    ... on Tree {
-                      entries {
-                        name
-                        type
-                        
+    .watchQuery({
+      query: gql`
+      {
+        repository(owner: "${userLogin}", name: "${reposName}") {
+          object(expression: "HEAD:${path}") {
+            ... on Tree {
+              entries {
+                name
+                type
+                object {
+                  ... on Blob {
+                    byteSize
+                    text
+                  }
+                  ... on Tree {
+                    entries {
+                      name
+                      type
+                      path
+                      object {
+                        ... on Blob {
+                          byteSize
+                        }
                       }
                     }
                   }
                 }
+                path
               }
             }
           }
-        }               
-        `
-      });
+        }
+      }             
+      `
+    });
   }
 }

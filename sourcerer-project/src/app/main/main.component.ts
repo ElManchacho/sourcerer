@@ -21,22 +21,27 @@ export class MainComponent implements OnInit, OnDestroy {
 
   private getSpecificRepositorySubscription: Subscription | undefined;
 
-  private foldersSubscribtions: [Subscription?] = []
-
   private getFolderSubscription: Subscription | undefined;
+
+
 
 
   loading = true;
   nom: string = "Not loaded";
-  dataUser: any | undefined = { repositories: "null" };
+  dataUser: any | undefined = { repositories: "null" , following:0,followers:0};
   dataCompany: any | undefined = { organization: "null" };
   userName: string = "Majdi";
   totalCommits: number = 0;
-  repositoryToExplore: [any?] = []
+  repositoriesList: [any?] = []
+  currentRepositoryToExplore: any
+  pathList:string[] = []
 
   constructor(public service: GraphqlService) { }
 
   ngOnInit(): void {
+
+    // Info relatives au compte
+
     this.getBioSubscription = this.service.getProfileData(this.userName).valueChanges.subscribe(result => {
       this.dataUser = result.data;
       this.dataUser = this.dataUser.user;
@@ -46,13 +51,17 @@ export class MainComponent implements OnInit, OnDestroy {
           this.dataCompany = this.dataCompany.user;
         });
       }
-      var repositories: any | undefined;
+
+      // Noms des repository
+
+      let repositories: any | undefined;
       this.getRepositoriesSubscription = this.service.getRepositories(this.userName, this.dataUser.repositories.totalCount).valueChanges.subscribe(resultRepositories => {
         repositories = resultRepositories.data;
         repositories = repositories.user.repositories.nodes;
         repositories.forEach((repository: any) => {
 
-          // Total de commits
+          // Total de commits par repository
+
           var commits: any | undefined;
           this.getCommitsSubscription = this.service.getCommits(this.userName, repository.name).valueChanges.subscribe(numberCommits => {
             commits = numberCommits.data;
@@ -60,156 +69,39 @@ export class MainComponent implements OnInit, OnDestroy {
             this.totalCommits += commits.totalCount
           });
 
-          this.foldersSubscribtions = []
-
           let repositoryName = repository.name
 
-          let folderName = ""
+          // Sources du repository
 
-          this.getFolderSubscription = this.mainFolderSubscribtion(this.userName, repositoryName, folderName).subscribe(folder => {
-            console.log(folder.data)
-            let repositories: any = folder.data;
-            let exploredFolder: any = this.separateFoldersFromFiles(repositories.repository.object.entries);
-            let filesData = this.getFileData(exploredFolder.fileList);
-            let folderData = this.getFolderData(exploredFolder.folderList);
-            let repository = { name: repositoryName, folderList: folderData, fileList: filesData }
-            let stillFolders: boolean = this.addRepository(repository)
-            let counter = 0
-            for (let i = 0; i < 2; i++) {
-              this.repositoryToExplore.forEach(repos => {
-                if (repos.name == repository.name) {
-                  repos.folderList.forEach((folderNewName: string) => {
-                    this.getFolderSubscription = this.mainFolderSubscribtion(this.userName, repositoryName, folderNewName + "/").subscribe(folder => {
-                      repositories = folder.data;
-                      exploredFolder = this.separateFoldersFromFiles(repositories.repository.object.entries);
-                      filesData = this.getFileData(exploredFolder.fileList);
-                      folderData = this.getFolderData(exploredFolder.folderList);
-                      repository = { name: repositoryName, folderList: folderData, fileList: filesData }
-                      stillFolders = this.addRepository(repository)
-                    });
-                  });
-                }
-              });
-            }
+          this.getFolderSubscription = this.service.getRepository(this.userName, repositoryName).valueChanges.subscribe(repository =>{
+            this.currentRepositoryToExplore = repository.data
+            this.pathList = []
+            this.getAllFolderSources(repository.data,repositoryName)
           });
+          
         });
       });
     }
     );
   }
 
-  mainFolderSubscribtion(userName: string, repositoryName: string, folderName: string) {
-    return this.service.getSpecificRepository(userName, repositoryName, folderName).valueChanges
-  }
-
-  addRepository(repositoryData: any): boolean {
-    let thereAreMoreFoldersToExplore = false
-    if (this.repositoryToExplore.length == 0) {
-      this.repositoryToExplore.push(repositoryData);
-    }
-    else {
-      let isIn: boolean = false
-      this.repositoryToExplore.forEach(repos => {
-        if (repos.name == repositoryData.name) {
-          isIn = true
-          repositoryData.fileList.forEach((fileToAdd: any) => {
-            let addable : boolean = true
-            repos.fileList.forEach((existingFile: any) => {
-              if(fileToAdd.name == existingFile.name)
-              {
-                addable = false
-              }
-            });
-            if(addable)
-            {
-              repos.fileList.push(fileToAdd)
-            }
-          });
-          
-          if (repos.folderList.length != 0) {
-            let newFolderlist: string[] = []
-            if (repositoryData.folderList.length != 0) {
-              repositoryData.folderList.forEach((folderToAdd: string) => {
-                repos.folderList.forEach((existingFolder: string) => {
-                  let newPath = existingFolder + "/" + folderToAdd
-                  if(!existingFolder.includes(folderToAdd))
-                  {
-                    newFolderlist.push(newPath)
-                  }
-                });
-              });
-              repos.folderList = repos.folderList.concat(newFolderlist)
-            }
-            else {
-              repos.folderList = repos.folderList.concat(repositoryData.folderList)
-            }
-          }
-          else {
-            repos.folderList = repos.folderList.concat(repositoryData.folderList)
-          }
-        }
-      });
-      if (!isIn) {
-        this.repositoryToExplore.push(repositoryData);
-      }
-
-    }
-
-    return thereAreMoreFoldersToExplore
-  }
-
-
-  getFileData(fileList: any): any {
-    let fileTampon: [any?] = []
-    fileList.forEach((file: any) => {
-      fileTampon.push(this.intoFile(file))
-    });
-    return fileTampon;
-  }
-
-  getFolderData(folderList: [any?]): [any?] {
-    let folderTampon: [any?] = []
-    folderList.forEach(folder => {
-      folderTampon.push(this.intoFolder(folder))
-    });
-    return folderTampon;
-  }
-
-  separateFoldersFromFiles(folder: any) {
-    let fileListed: [any?] = []
-    let folderListed: [any?] = []
-    folder.forEach((element: any) => {
-      if (element.type == "blob") {
-        if (fileListed.length == 0) {
-          fileListed = []
-        }
-        fileListed.push(element)
-      }
-      else if (element.type == "tree") {
-        if (folderListed.length == 0) {
-          folderListed = []
-        }
-        folderListed.push(element)
+  getAllFolderSources(folder: any, repositoryName:string) {
+    folder.repository.object.entries.forEach((entry: any) => {
+      if(entry.type=="tree")
+      {
+        this.pathList.push(entry.path)
       }
     });
-    return { fileList: fileListed, folderList: folderListed };
-  }
 
-  intoFile(file: any) {
-    let textToParse: string
-    let typeToParse: string = file.name
-    if (!file.object.text) {
-      textToParse = ""
-    }
-    else {
-      textToParse = file.object.text
-    }
-    let typeTampon = typeToParse.split(".")
-    return { name: file.name, type: typeTampon[typeTampon.length - 1], size: file.object.byteSize, lines: textToParse.split("\r\n").length-1 };
-  }
-
-  intoFolder(folder: any) {
-    return folder.name
+    this.pathList.forEach(path=>{
+      this.getSpecificRepositorySubscription = this.service.getSpecificRepository(this.userName,repositoryName,path).valueChanges.subscribe((subfolder:any)=>{
+        let subfolderData = subfolder.data
+        //this.separateFoldersFromFiles(subfolderData,repositoryName)
+      })
+    })
+    
+    this.repositoriesList.push({name:repositoryName,pathList:this.pathList})
+    console.log(this.repositoriesList)
   }
 
   ngOnDestroy() {
