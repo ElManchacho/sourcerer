@@ -105,9 +105,26 @@
       </tr>
     </table>
   </div>
-
-
-
-
-
 </div>
+
+<ul>
+  <li *ngFor="let repos of repositoryToExplore">
+    Repository : {{ repos.name }}
+    <ul>
+      Fichiers :
+      <li *ngFor="let file of repos.fileList">
+        &nbsp;&nbsp;{{ file.name }}
+
+      </li>
+    </ul>
+    Dossiers :
+    <ul >
+      <li *ngFor="let folder of repos.folderList">
+        &nbsp;&nbsp;{{ folder }}
+
+
+      </li>
+    </ul>
+    <br/>
+  </li>
+</ul>

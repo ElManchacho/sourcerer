@@ -98,16 +98,47 @@ export class GraphqlService {
                   object {
                     ... on Blob {
                       byteSize
+                      text
                     }
                     ... on Tree {
                       entries {
                         name
                         type
-                        object {
-                          ... on Blob {
-                            byteSize
-                          }
-                        }
+                        
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }               
+        `
+      });
+  }
+
+  getSpecificRepository(userLogin:string,reposName:string,path:string)
+  {
+    return this.apollo
+      .watchQuery({
+        query: gql`
+        {
+          repository(name: "${reposName}", owner: "${userLogin}") {
+            object(expression: "HEAD:${path}") {
+              ... on Tree {
+                entries {
+                  name
+                  type
+                  object {
+                    ... on Blob {
+                      byteSize
+                      text
+                    }
+                    ... on Tree {
+                      entries {
+                        name
+                        type
+                        
                       }
                     }
                   }
