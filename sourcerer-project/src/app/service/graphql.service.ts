@@ -89,7 +89,7 @@ export class GraphqlService {
       });
   }
 
-  getRepository(userLogin:string,reposName:string)
+  getMainRepositoryFolder(userLogin:string,reposName:string)
   {
     return this.apollo
       .watchQuery({
@@ -129,7 +129,26 @@ export class GraphqlService {
       });
   }
 
-  getSpecificRepository(userLogin:string,reposName:string,path:string):any
+  getFileData(userLogin:string,reposName:string,path:string):any
+  {
+    return this.apollo
+    .watchQuery({
+      query: gql`
+      {
+        repository(owner: "${userLogin}", name: "${reposName}") {
+          object(expression: "HEAD:${path}") {
+            ... on Blob {
+              text
+              byteSize
+            }
+          }
+        }
+      }             
+      `
+    });
+  }
+
+  getAllRepositoryFolder(userLogin:string,reposName:string,path:string):any
   {
     return this.apollo
     .watchQuery({

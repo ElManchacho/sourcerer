@@ -1,6 +1,10 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
+import { ObservableArray } from "observable-collection";
 import { GraphqlService } from '../service/graphql.service';
+
+
+type Repository = {name:string; srcList:ObservableArray<string>; filePathList:ObservableArray<any>;};
 
 @Component({
   selector: 'app-main',
@@ -19,9 +23,11 @@ export class MainComponent implements OnInit, OnDestroy {
 
   private getCommitsSubscription: Subscription | undefined;
 
-  private getSpecificRepositorySubscription: Subscription | undefined;
+  private getMainFolderSubscription: Subscription | undefined;
+  
+  private getAllRepositoryFolder: Subscription | undefined;
 
-  private getFolderSubscription: Subscription | undefined;
+  private getFilesDataSubscription: Subscription | undefined
 
 
 
@@ -32,15 +38,29 @@ export class MainComponent implements OnInit, OnDestroy {
   dataCompany: any | undefined = { organization: "null" };
   userName: string = "Majdi";
   totalCommits: number = 0;
-  repositoriesList: [any?] = []
-  currentRepositoryToExplore: any
-  fileList:any[]=[]
-  pathList:string[] = []
+  repositoriesList =  new ObservableArray<Repository>();
+  
+  pathList = new ObservableArray<string>();
+
+  filePathList =  new ObservableArray<string>();
+
+  fileList = new ObservableArray<any>();
+
+  repositoryList = new ObservableArray<any>();
+  
   pathToAdd:string[] = []
 
   constructor(public service: GraphqlService) { }
 
   ngOnInit(): void {
+
+    this.pathList.subscribe();
+
+    this.filePathList.subscribe();
+
+    this.fileList.subscribe();
+
+    this.repositoriesList.subscribe();
 
     // Info relatives au compte
 
@@ -65,6 +85,8 @@ export class MainComponent implements OnInit, OnDestroy {
           // Total de commits par repository
 
           var commits: any | undefined;
+
+
           this.getCommitsSubscription = this.service.getCommits(this.userName, repository.name).valueChanges.subscribe(numberCommits => {
             commits = numberCommits.data;
             commits = commits.repository.defaultBranchRef.target.history
@@ -73,14 +95,18 @@ export class MainComponent implements OnInit, OnDestroy {
 
           let repositoryName = repository.name
 
-          // Sources du repository
+          //console.log(repositoryName)
+          if(repositoryName=="deadlands")
+          {
+            // Sources du repository
 
-          this.getFolderSubscription = this.service.getRepository(this.userName, repositoryName).valueChanges.subscribe(repository =>{
-            this.pathList = []
-            this.fileList = []
-            this.getAllFolderSources(repository.data,repositoryName)
-            console.log(this.repositoriesList)
-          });
+            this.pathList = new ObservableArray<any>();
+
+            this.getMainFolderSources(repositoryName)
+
+            this.fileList.subscribe(file => console.log(file))
+
+          }
           
         });
       });
@@ -88,38 +114,72 @@ export class MainComponent implements OnInit, OnDestroy {
     );
   }
 
-  getAllFolderSources(folder: any, repositoryName:string):any {
-    folder.repository.object.entries.forEach((entry: any) => {
-      if(entry.type=="tree")
+  getFilesData(repositoryName: string, path: string) {
+    this.getFilesDataSubscription = this.service.getFileData(this.userName, repositoryName, path).valueChanges.subscribe((file: any) => {
+      let currentFile = file.data.repository.object
+      let currentFileLines = 0
+      if(currentFile.text)
       {
-        this.pathList.push(entry.path)
+        currentFileLines = currentFile.text.split("\r\n")
       }
-      else if(entry.type==="blob")
-      {
-        this.fileList.push(entry)
-      }
+      this.fileList.push({pathFile:path,size:currentFile.byteSyze,text:currentFile.text,lines:currentFileLines})
+    })
+  }
+
+  getMainFolderSources(repositoryName:string){
+    this.pathList.push("")
+    this.getMainFolderSubscription = this.service.getMainRepositoryFolder(this.userName, repositoryName).valueChanges.subscribe((repository:any) =>{
+      let repositoryContent = repository.data.repository.object.entries
+      repositoryContent.forEach((content: any) => {
+        if(content.type=="tree")
+        {
+          this.pathList.push(content.path)
+        }
+        else if(content.type=="blob")
+        {
+          if (this.filePathList.indexOf(content.path)==-1)
+          {
+            this.filePathList.push(content.path)
+          }
+        }
+      });
+      this.getAllFolderSources(repositoryName)
     });
+  }
+
+  getAllFolderSources(repositoryName:string):any {
     this.pathList.forEach(path=>{
-      this.getSpecificRepositorySubscription = this.service.getSpecificRepository(this.userName,repositoryName,path).valueChanges.subscribe((subfolder:any)=>{
+      this.getAllRepositoryFolder = this.service.getAllRepositoryFolder(this.userName,repositoryName,path).valueChanges.subscribe((subfolder:any)=>{
         subfolder.data.repository.object.entries.forEach((entry:any) => {
           if(entry.type=="tree")
           {
-            this.pathList.push(entry.path)
+            if(this.pathList.indexOf(entry.path)==-1)
+            {
+              this.pathList.push(entry.path)
+              this.getAllFolderSources(repositoryName)
+            }
+            
           }
-          else if(entry.type==="blob")
-          {
-            this.fileList.push(entry)
-          }
+          else if(entry.type=="blob")
+            {
+              if (this.filePathList.indexOf(entry.path)==-1)
+              {
+                this.filePathList.push(entry.path)
+                this.getFilesData(repositoryName,entry.path)
+              }
+            }
         });
-      })
-    })
-    // Erreur dans l'affectation des src
-    this.repositoriesList.push({name:repositoryName, srcList:this.pathList, fileList:this.fileList})
+      });
+    });
+    
     
   }
 
 
   ngOnDestroy() {
+
+    this.pathList.unsubscribe();
+
     this.getBioSubscription?.unsubscribe();
 
     this.getCompanySubscription?.unsubscribe();
@@ -128,9 +188,11 @@ export class MainComponent implements OnInit, OnDestroy {
 
     this.getCommitsSubscription?.unsubscribe();
 
-    this.getSpecificRepositorySubscription?.unsubscribe();
+    this.getFilesDataSubscription?.unsubscribe();
 
-    this.getFolderSubscription?.unsubscribe();
+    this.getAllRepositoryFolder?.unsubscribe();
+
+    this.getMainFolderSubscription?.unsubscribe();
   }
 
 }

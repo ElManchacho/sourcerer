@@ -22,6 +22,7 @@
     "apollo-angular": "^2.6.0",
     "bulma": "^0.9.3",
     "graphql": "^15.7.0",
+    "observable-collection": "^1.2.3",
     "rxjs": "~6.6.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.11.4"
