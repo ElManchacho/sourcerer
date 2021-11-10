@@ -1,6 +1,10 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
+import { ObservableArray } from "observable-collection";
 import { GraphqlService } from '../service/graphql.service';
+
+
+type Repository = {name:string; srcList:ObservableArray<string>; filePathList:ObservableArray<any>;};
 
 @Component({
   selector: 'app-main',
@@ -19,24 +23,47 @@ export class MainComponent implements OnInit, OnDestroy {
 
   private getCommitsSubscription: Subscription | undefined;
 
-  private getSpecificRepositorySubscription: Subscription | undefined;
+  private getMainFolderSubscription: Subscription | undefined;
+  
+  private getAllRepositoryFolder: Subscription | undefined;
 
-  private foldersSubscribtions: [Subscription?] = []
+  private getFilesDataSubscription: Subscription | undefined
 
-  private getFolderSubscription: Subscription | undefined;
+
 
 
   loading = true;
   nom: string = "Not loaded";
-  dataUser: any | undefined = { repositories: "null" };
+  dataUser: any | undefined = { repositories: "null" , following:0,followers:0};
   dataCompany: any | undefined = { organization: "null" };
   userName: string = "Majdi";
   totalCommits: number = 0;
-  repositoryToExplore: [any?] = []
+  repositoriesList =  new ObservableArray<Repository>();
+  
+  pathList = new ObservableArray<string>();
+
+  filePathList =  new ObservableArray<string>();
+
+  fileList = new ObservableArray<any>();
+
+  repositoryList = new ObservableArray<any>();
+  
+  pathToAdd:string[] = []
 
   constructor(public service: GraphqlService) { }
 
   ngOnInit(): void {
+
+    this.pathList.subscribe();
+
+    this.filePathList.subscribe();
+
+    this.fileList.subscribe();
+
+    this.repositoriesList.subscribe();
+
+    // Info relatives au compte
+
     this.getBioSubscription = this.service.getProfileData(this.userName).valueChanges.subscribe(result => {
       this.dataUser = result.data;
       this.dataUser = this.dataUser.user;
@@ -46,173 +73,113 @@ export class MainComponent implements OnInit, OnDestroy {
           this.dataCompany = this.dataCompany.user;
         });
       }
-      var repositories: any | undefined;
+
+      // Noms des repository
+
+      let repositories: any | undefined;
       this.getRepositoriesSubscription = this.service.getRepositories(this.userName, this.dataUser.repositories.totalCount).valueChanges.subscribe(resultRepositories => {
         repositories = resultRepositories.data;
         repositories = repositories.user.repositories.nodes;
         repositories.forEach((repository: any) => {
 
-          // Total de commits
+          // Total de commits par repository
+
           var commits: any | undefined;
+
+
           this.getCommitsSubscription = this.service.getCommits(this.userName, repository.name).valueChanges.subscribe(numberCommits => {
             commits = numberCommits.data;
             commits = commits.repository.defaultBranchRef.target.history
             this.totalCommits += commits.totalCount
           });
 
-          this.foldersSubscribtions = []
-
           let repositoryName = repository.name
 
-          let folderName = ""
+          //console.log(repositoryName)
+          if(repositoryName=="deadlands")
+          {
+            // Sources du repository
 
-          this.getFolderSubscription = this.mainFolderSubscribtion(this.userName, repositoryName, folderName).subscribe(folder => {
-            console.log(folder.data)
-            let repositories: any = folder.data;
-            let exploredFolder: any = this.separateFoldersFromFiles(repositories.repository.object.entries);
-            let filesData = this.getFileData(exploredFolder.fileList);
-            let folderData = this.getFolderData(exploredFolder.folderList);
-            let repository = { name: repositoryName, folderList: folderData, fileList: filesData }
-            let stillFolders: boolean = this.addRepository(repository)
-            let counter = 0
-            for (let i = 0; i < 2; i++) {
-              this.repositoryToExplore.forEach(repos => {
-                if (repos.name == repository.name) {
-                  repos.folderList.forEach((folderNewName: string) => {
-                    this.getFolderSubscription = this.mainFolderSubscribtion(this.userName, repositoryName, folderNewName + "/").subscribe(folder => {
-                      repositories = folder.data;
-                      exploredFolder = this.separateFoldersFromFiles(repositories.repository.object.entries);
-                      filesData = this.getFileData(exploredFolder.fileList);
-                      folderData = this.getFolderData(exploredFolder.folderList);
-                      repository = { name: repositoryName, folderList: folderData, fileList: filesData }
-                      stillFolders = this.addRepository(repository)
-                    });
-                  });
-                }
-              });
-            }
-          });
+            this.pathList = new ObservableArray<any>();
+
+            this.getMainFolderSources(repositoryName)
+
+            this.fileList.subscribe(file => console.log(file))
+
+          }
+          
         });
       });
     }
     );
   }
 
-  mainFolderSubscribtion(userName: string, repositoryName: string, folderName: string) {
-    return this.service.getSpecificRepository(userName, repositoryName, folderName).valueChanges
+  getFilesData(repositoryName: string, path: string) {
+    this.getFilesDataSubscription = this.service.getFileData(this.userName, repositoryName, path).valueChanges.subscribe((file: any) => {
+      let currentFile = file.data.repository.object
+      let currentFileLines = 0
+      if(currentFile.text)
+      {
+        currentFileLines = currentFile.text.split("\r\n")
+      }
+      this.fileList.push({pathFile:path,size:currentFile.byteSyze,text:currentFile.text,lines:currentFileLines})
+    })
   }
 
-  addRepository(repositoryData: any): boolean {
-    let thereAreMoreFoldersToExplore = false
-    if (this.repositoryToExplore.length == 0) {
-      this.repositoryToExplore.push(repositoryData);
-    }
-    else {
-      let isIn: boolean = false
-      this.repositoryToExplore.forEach(repos => {
-        if (repos.name == repositoryData.name) {
-          isIn = true
-          repositoryData.fileList.forEach((fileToAdd: any) => {
-            let addable : boolean = true
-            repos.fileList.forEach((existingFile: any) => {
-              if(fileToAdd.name == existingFile.name)
-              {
-                addable = false
-              }
-            });
-            if(addable)
-            {
-              repos.fileList.push(fileToAdd)
-            }
-          });
-          
-          if (repos.folderList.length != 0) {
-            let newFolderlist: string[] = []
-            if (repositoryData.folderList.length != 0) {
-              repositoryData.folderList.forEach((folderToAdd: string) => {
-                repos.folderList.forEach((existingFolder: string) => {
-                  let newPath = existingFolder + "/" + folderToAdd
-                  if(!existingFolder.includes(folderToAdd))
-                  {
-                    newFolderlist.push(newPath)
-                  }
-                });
-              });
-              repos.folderList = repos.folderList.concat(newFolderlist)
-            }
-            else {
-              repos.folderList = repos.folderList.concat(repositoryData.folderList)
-            }
-          }
-          else {
-            repos.folderList = repos.folderList.concat(repositoryData.folderList)
+  getMainFolderSources(repositoryName:string){
+    this.pathList.push("")
+    this.getMainFolderSubscription = this.service.getMainRepositoryFolder(this.userName, repositoryName).valueChanges.subscribe((repository:any) =>{
+      let repositoryContent = repository.data.repository.object.entries
+      repositoryContent.forEach((content: any) => {
+        if(content.type=="tree")
+        {
+          this.pathList.push(content.path)
+        }
+        else if(content.type=="blob")
+        {
+          if (this.filePathList.indexOf(content.path)==-1)
+          {
+            this.filePathList.push(content.path)
           }
         }
       });
-      if (!isIn) {
-        this.repositoryToExplore.push(repositoryData);
-      }
-
-    }
-
-    return thereAreMoreFoldersToExplore
-  }
-
-
-  getFileData(fileList: any): any {
-    let fileTampon: [any?] = []
-    fileList.forEach((file: any) => {
-      fileTampon.push(this.intoFile(file))
+      this.getAllFolderSources(repositoryName)
     });
-    return fileTampon;
   }
 
-  getFolderData(folderList: [any?]): [any?] {
-    let folderTampon: [any?] = []
-    folderList.forEach(folder => {
-      folderTampon.push(this.intoFolder(folder))
+  getAllFolderSources(repositoryName:string):any {
+    this.pathList.forEach(path=>{
+      this.getAllRepositoryFolder = this.service.getAllRepositoryFolder(this.userName,repositoryName,path).valueChanges.subscribe((subfolder:any)=>{
+        subfolder.data.repository.object.entries.forEach((entry:any) => {
+          if(entry.type=="tree")
+          {
+            if(this.pathList.indexOf(entry.path)==-1)
+            {
+              this.pathList.push(entry.path)
+              this.getAllFolderSources(repositoryName)
+            }
+            
+          }
+          else if(entry.type=="blob")
+            {
+              if (this.filePathList.indexOf(entry.path)==-1)
+              {
+                this.filePathList.push(entry.path)
+                this.getFilesData(repositoryName,entry.path)
+              }
+            }
+        });
+      });
     });
-    return folderTampon;
+    
+    
   }
 
-  separateFoldersFromFiles(folder: any) {
-    let fileListed: [any?] = []
-    let folderListed: [any?] = []
-    folder.forEach((element: any) => {
-      if (element.type == "blob") {
-        if (fileListed.length == 0) {
-          fileListed = []
-        }
-        fileListed.push(element)
-      }
-      else if (element.type == "tree") {
-        if (folderListed.length == 0) {
-          folderListed = []
-        }
-        folderListed.push(element)
-      }
-    });
-    return { fileList: fileListed, folderList: folderListed };
-  }
-
-  intoFile(file: any) {
-    let textToParse: string
-    let typeToParse: string = file.name
-    if (!file.object.text) {
-      textToParse = ""
-    }
-    else {
-      textToParse = file.object.text
-    }
-    let typeTampon = typeToParse.split(".")
-    return { name: file.name, type: typeTampon[typeTampon.length - 1], size: file.object.byteSize, lines: textToParse.split("\r\n").length-1 };
-  }
-
-  intoFolder(folder: any) {
-    return folder.name
-  }
 
   ngOnDestroy() {
+
+    this.pathList.unsubscribe();
+
     this.getBioSubscription?.unsubscribe();
 
     this.getCompanySubscription?.unsubscribe();
@@ -221,9 +188,11 @@ export class MainComponent implements OnInit, OnDestroy {
 
     this.getCommitsSubscription?.unsubscribe();
 
-    this.getSpecificRepositorySubscription?.unsubscribe();
+    this.getFilesDataSubscription?.unsubscribe();
 
-    this.getFolderSubscription?.unsubscribe();
+    this.getAllRepositoryFolder?.unsubscribe();
+
+    this.getMainFolderSubscription?.unsubscribe();
   }
 
 }
