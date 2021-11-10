@@ -107,22 +107,23 @@
   </div>
 </div>
 
-<!--<ul>
-  <li *ngFor="let repos of repositoriesList">
-    Repository : {{ repos.name }}
+<ul>
+  <li>
+    Repository : {{ repositoryDenomination }}
     <br/>
     Sources :
     <ul >
-      <li *ngFor="let src of repos.srcList">
-        &nbsp;&nbsp;{{ src }}
+      <li *ngFor="let filePath of filePathList">
+        &nbsp;&nbsp;{{ filePath }}
 
 
       </li>
     </ul>
     Fichiers :
     <ul >
-      <li *ngFor="let file of repos.fileList">
-        &nbsp;&nbsp;{{ file.name }}
+      <li *ngFor="let file of fileList">
+        &nbsp;&nbsp;Nom {{ file.name }}
+        &nbsp;&nbsp;Nbr de lignes {{ file.lines }}
 
 
       </li>
@@ -130,4 +131,3 @@
     <br/>
   </li>
 </ul>
--->

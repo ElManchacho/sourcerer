@@ -39,6 +39,7 @@ export class MainComponent implements OnInit, OnDestroy {
   userName: string = "Majdi";
   totalCommits: number = 0;
   repositoriesList =  new ObservableArray<Repository>();
+  repositoryDenomination : string = "Not loaded"
   
   pathList = new ObservableArray<string>();
 
@@ -47,18 +48,10 @@ export class MainComponent implements OnInit, OnDestroy {
   fileList = new ObservableArray<any>();
 
   repositoryList = new ObservableArray<any>();
-  
-  pathToAdd:string[] = []
 
   constructor(public service: GraphqlService) { }
 
   ngOnInit(): void {
-
-    this.pathList.subscribe();
-
-    this.filePathList.subscribe();
-
-    this.fileList.subscribe();
 
     this.repositoriesList.subscribe();
 
@@ -93,19 +86,29 @@ export class MainComponent implements OnInit, OnDestroy {
             this.totalCommits += commits.totalCount
           });
 
-          let repositoryName = repository.name
+          const repositoryName = repository.name
 
           //console.log(repositoryName)
+          // Sources du repository
+
+          this.pathList.subscribe();
+
+          this.filePathList.subscribe();
+
+          this.fileList.subscribe();
+
           if(repositoryName=="deadlands")
           {
             // Sources du repository
+
+            this.repositoryDenomination = repositoryName
 
             this.pathList = new ObservableArray<any>();
 
             this.getMainFolderSources(repositoryName)
 
-
           }
+          
           
         });
       });
@@ -113,15 +116,18 @@ export class MainComponent implements OnInit, OnDestroy {
     );
   }
 
+  
+
   getFilesData(repositoryName: string, path: string) {
     this.getFilesDataSubscription = this.service.getFileData(this.userName, repositoryName, path).valueChanges.subscribe((file: any) => {
       let currentFile = file.data.repository.object
       let currentFileLines = 0
       if(currentFile.text)
       {
-        currentFileLines = currentFile.text.split("\r\n")
+        currentFileLines = currentFile.text.split("\r\n").length
       }
-      this.fileList.push({pathFile:path,size:currentFile.byteSyze,text:currentFile.text,lines:currentFileLines})
+      let nameFile = path.split("/")
+      this.fileList.push({name:nameFile[nameFile.length-1],pathFile:path,size:currentFile.byteSyze,text:currentFile.text,lines:currentFileLines})
     })
   }
 
