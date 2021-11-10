@@ -104,7 +104,6 @@ export class MainComponent implements OnInit, OnDestroy {
 
             this.getMainFolderSources(repositoryName)
 
-            this.fileList.subscribe(file => console.log(file))
 
           }
           
