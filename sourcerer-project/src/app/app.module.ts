@@ -14,6 +14,7 @@ import { HeaderComponent } from './globalPageComponents/header/header.component'
 import { FooterComponent } from './globalPageComponents/footer/footer.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import {MatIconModule} from '@angular/material/icon'; 
+import { ChartsModule } from 'ng2-charts';
 
 const token = environment.gitToken;
 
@@ -28,6 +29,7 @@ const uri = environment.gitUri;
   ],
   imports: [
     BrowserModule,
+    ChartsModule,
     AppRoutingModule,
     GraphQLModule,
     HttpClientModule,

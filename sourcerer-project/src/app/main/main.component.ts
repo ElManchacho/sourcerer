@@ -2,6 +2,8 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { ObservableArray } from "observable-collection";
 import { GraphqlService } from '../service/graphql.service';
+import { ChartType, ChartOptions } from 'chart.js';
+import { SingleDataSet, Label, monkeyPatchChartJsLegend, monkeyPatchChartJsTooltip, ChartsModule } from 'ng2-charts';
 
 type Repository = {name:string, description:string, srcList:ObservableArray<string>, fileList:ObservableArray<any>};
 
@@ -15,6 +17,20 @@ type CodeType = {name:string,extension:string,bytes:number}
 
 
 export class MainComponent implements OnInit, OnDestroy {
+
+  public pieChartOptions: ChartOptions = {
+    responsive: true,
+  };
+
+  public pieChartLabels: Label[] = [];
+  public pieChartData: SingleDataSet = [];
+  public pieChartType: ChartType = 'pie';
+  public pieChartLegend = true;
+  public pieChartPlugins = [];
+  public pieChartColors: Array < any > = [{
+    backgroundColor: ['red', 'yellow', 'rgba(148,159,177,0.2)','green','purple'],
+    borderColor: ['red', 'yellow', 'rgba(148,159,177,0.2)','green','purple']
+ }];
 
   private getBioSubscription: Subscription | undefined;
 
@@ -37,6 +53,7 @@ export class MainComponent implements OnInit, OnDestroy {
   userLogin: string = "Majdi";
   totalCommits: number = 0;
   lines:number=0
+  totalBytes:number=0
   
   repositoresTraceList = new ObservableArray<any>();
 
@@ -46,9 +63,8 @@ export class MainComponent implements OnInit, OnDestroy {
 
   codeTypes = new ObservableArray<CodeType>();
 
-  constructor(public service: GraphqlService) { }
-
-  ngOnInit(): void {
+  constructor(public service: GraphqlService) {
+    
 
     this.repositoriesList.subscribe();
 
@@ -112,7 +128,6 @@ export class MainComponent implements OnInit, OnDestroy {
                 filePathList.subscribe();
           
                 fileList.subscribe();
-                console.log(repos)
                 this.getMainFolderSources(repos.name,pathList,filePathList,fileList)
                 this.repositoriesList.push({name:repos.name,description:repos.description,srcList:filePathList, fileList:fileList})
               }
@@ -120,6 +135,11 @@ export class MainComponent implements OnInit, OnDestroy {
           }) 
       });
     });
+    monkeyPatchChartJsTooltip();
+    monkeyPatchChartJsLegend();
+   }
+
+  ngOnInit(): void {
   }
 
   initCodeTypes(){
@@ -129,16 +149,30 @@ export class MainComponent implements OnInit, OnDestroy {
     this.codeTypeList.push({name:"C",extension:"c",bytes:0})
     this.codeTypeList.push({name:"Unattributed",extension:"",bytes:0})
   }
+
+  initPieChart(){
+    this.pieChartData = []
+    this.pieChartLabels = []
+    this.codeTypeList.forEach(codeType=>{
+      this.pieChartData.push(codeType.bytes)
+      this.pieChartLabels.push(codeType.name + (Math.round((codeType.bytes/this.totalBytes)*100)).toString() + " %")
+    })
+    
+  }
+
   getLanguagesData(file: any) {
     let splitedName = file.name.split(".")
     let typeName = splitedName[splitedName.length - 1]
     this.codeTypeList.forEach((codeType : CodeType)=>{
+     
       if (codeType.extension==typeName)
-      {
+      { 
+        this.totalBytes +=file.size
         codeType.bytes += file.size
       }
       else if(codeType.extension=="")
       {
+        this.totalBytes +=file.size
         codeType.bytes += file.size
       }
     })
@@ -215,7 +249,7 @@ export class MainComponent implements OnInit, OnDestroy {
         });
       });
     });
-    
+    this.initPieChart()
     
   }
 
