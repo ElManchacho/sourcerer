@@ -65,7 +65,7 @@
             Lines of code
           
             <br/>
-            Test
+            {{lines}}
             
           </div>
 
@@ -108,26 +108,30 @@
 </div>
 
 <ul>
-  <li>
-    Repository : {{ repositoryDenomination }}
-    <br/>
-    Sources :
-    <ul >
-      <li *ngFor="let filePath of filePathList">
-        &nbsp;&nbsp;{{ filePath }}
+  <li *ngFor="let repository of repositoriesList">
+    <ul>
+      <li>
+        Repository : {{ repository.name }}
+        <br />
+        Sources :
+        <ul>
+          <li *ngFor="let filePath of repository.srcList">
+            &nbsp;&nbsp;{{ filePath }}
 
 
+          </li>
+        </ul>
+        Fichiers :
+        <ul>
+          <li *ngFor="let file of repository.fileList">
+            &nbsp;&nbsp;Nom {{ file.name }}
+            &nbsp;&nbsp;Nbr de lignes {{ file.lines }}
+
+
+          </li>
+        </ul>
+        <br />
       </li>
     </ul>
-    Fichiers :
-    <ul >
-      <li *ngFor="let file of fileList">
-        &nbsp;&nbsp;Nom {{ file.name }}
-        &nbsp;&nbsp;Nbr de lignes {{ file.lines }}
-
-
-      </li>
-    </ul>
-    <br/>
   </li>
 </ul>
