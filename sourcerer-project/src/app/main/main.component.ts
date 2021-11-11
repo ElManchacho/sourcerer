@@ -28,8 +28,7 @@ export class MainComponent implements OnInit, OnDestroy {
   public pieChartLegend = true;
   public pieChartPlugins = [];
   public pieChartColors: Array < any > = [{
-    backgroundColor: ['red', 'yellow', 'rgba(148,159,177,0.2)','green','purple'],
-    borderColor: ['red', 'yellow', 'rgba(148,159,177,0.2)','green','purple']
+    backgroundColor: ['rbga(192,241,45)', 'rgba(109,76,18)', 'rgba(226,14,144)','rgba(6,122,107)','rgba(129,193,63)']
  }];
 
   private getBioSubscription: Subscription | undefined;
@@ -155,7 +154,7 @@ export class MainComponent implements OnInit, OnDestroy {
     this.pieChartLabels = []
     this.codeTypeList.forEach(codeType=>{
       this.pieChartData.push(codeType.bytes)
-      this.pieChartLabels.push(codeType.name + (Math.round((codeType.bytes/this.totalBytes)*100)).toString() + " %")
+      this.pieChartLabels.push(codeType.name + " " + (Math.round((codeType.bytes/this.totalBytes)*100)).toString() + " %")
     })
     
   }
