@@ -51,6 +51,8 @@ export class MainComponent implements OnInit, OnDestroy {
 
     this.repositoresTraceList.subscribe();
 
+    this.codeTypeList.subscribe();
+
     // Info relatives au compte
 
     this.getBioSubscription = this.service.getProfileData(this.userLogin).valueChanges.subscribe(result => {
@@ -106,6 +108,8 @@ export class MainComponent implements OnInit, OnDestroy {
                 fileList.subscribe();
           
                 this.getMainFolderSources(repos.name,pathList,filePathList,fileList)
+
+                
           
                 this.repositoriesList.push({name:repos.name, srcList:filePathList, fileList:fileList})
               }
@@ -115,7 +119,38 @@ export class MainComponent implements OnInit, OnDestroy {
     });
   }
 
-  
+  getLanguagesData(file: any) {
+
+    console.log(file)
+    const typeFile = file.name.split(".")[file.name.split(".").length - 1]
+    console.log(typeFile)
+    this.codeTypeList.push({ name: typeFile })
+    /*
+    let typeIsNew = true
+    let existingTypCodeLocationCounter = 0
+    let existingTypCodeLocation: number
+    this.codeTypeList.forEach(typeCode => {
+      console.log("typeCheck : " + typeCode.type, "maybeNewType : " + typeFile)
+      console.log(typeCode.type == typeFile)
+      if (typeCode.type == typeFile) {
+        typeIsNew = false
+        existingTypCodeLocation = existingTypCodeLocationCounter
+      }
+      existingTypCodeLocationCounter += 1
+
+      if (typeIsNew) {
+        const newCodeType = { type: typeFile, bytes: fileSize }
+        this.codeTypeList.push(newCodeType)
+      }
+      else {
+        console.log(this.codeTypeList[existingTypCodeLocationCounter - 1].bytes + " + " + fileSize + " = " + (this.codeTypeList[existingTypCodeLocationCounter - 1].bytes + fileSize))
+        this.codeTypeList[existingTypCodeLocationCounter - 1].bytes = this.codeTypeList[existingTypCodeLocationCounter - 1].bytes + fileSize
+      }
+
+    });*/
+
+    //faire en sorte d'incrémenter la mémoire d'un langage déjà existant
+  }
 
   getFilesData(repositoryName: string, path: string, fileList:ObservableArray<any>) {
     this.getFilesDataSubscription = this.service.getFileData(this.userLogin, repositoryName, path).valueChanges.subscribe((file: any) => {
@@ -124,44 +159,17 @@ export class MainComponent implements OnInit, OnDestroy {
       let fileSize = 0
       const fileSrc = path.split("/")
       const nameFile = fileSrc[fileSrc.length-1]
-      const typeFile = nameFile.split(".")[nameFile.split(".").length-1]
       if(currentFile.text)
       {
         fileSize = currentFile.byteSize
         
         currentFileLines = currentFile.text.split("\r\n").length + currentFile.text.split("\n\n").length
         
-        let typeIsNew = true
-        let existingTypCodeLocationCounter = 0
-        let existingTypCodeLocation:number
-        this.codeTypeList.forEach(typeCode => {
-          console.log("typeCheck : " + typeCode.type,"maybeNewType : "+typeFile)
-          console.log(typeCode.type == typeFile)
-          if (typeCode.type == typeFile)
-          {
-            typeIsNew = false
-            existingTypCodeLocation = existingTypCodeLocationCounter
-          }
-          existingTypCodeLocationCounter +=1
-        });
-
-        if(typeIsNew)
-        {
-          const newCodeType = {type:typeFile,bytes:fileSize}
-          this.codeTypeList.push(newCodeType)
-        }
-        else{
-          console.log(existingTypCodeLocationCounter)
-          console.log(typeFile)
-          //console.log(this.codeTypeList[existingTypCodeLocation-1])
-          this.codeTypeList[existingTypCodeLocationCounter-1].bytes+=fileSize
-        }
-        //faire en sorte d'incrémenter la mémoire d'un langage déjà existant
-        
       }
       this.lines += currentFileLines
       const fileData = {name:nameFile,pathFile:path,size:fileSize,text:currentFile.text,lines:currentFileLines}
       fileList.push(fileData)
+      this.getLanguagesData(fileData)
     })
   }
 
