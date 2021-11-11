@@ -58,6 +58,7 @@ export class GraphqlService {
             repositories(first:${totalRepositories}){
               nodes{
                 name
+                description
                 isPrivate
                 owner {
                   login

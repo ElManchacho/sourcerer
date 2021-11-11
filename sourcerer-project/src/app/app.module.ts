@@ -12,6 +12,8 @@ import { HttpClientModule, HttpHeaders } from '@angular/common/http';
 import {environment} from '../environments/environment';
 import { HeaderComponent } from './globalPageComponents/header/header.component';
 import { FooterComponent } from './globalPageComponents/footer/footer.component';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import {MatIconModule} from '@angular/material/icon'; 
 
 const token = environment.gitToken;
 
@@ -28,7 +30,9 @@ const uri = environment.gitUri;
     BrowserModule,
     AppRoutingModule,
     GraphQLModule,
-    HttpClientModule
+    HttpClientModule,
+    BrowserAnimationsModule,
+    MatIconModule
   ],
   providers: [
     {

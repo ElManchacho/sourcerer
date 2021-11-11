@@ -3,8 +3,9 @@ import { Subscription } from 'rxjs';
 import { ObservableArray } from "observable-collection";
 import { GraphqlService } from '../service/graphql.service';
 
+type Repository = {name:string, description:string, srcList:ObservableArray<string>, fileList:ObservableArray<any>};
 
-type Repository = {name:string; srcList:ObservableArray<string>; fileList:ObservableArray<any>;};
+type CodeType = {name:string,extension:string,bytes:number}
 
 @Component({
   selector: 'app-main',
@@ -43,6 +44,8 @@ export class MainComponent implements OnInit, OnDestroy {
 
   codeTypeList =  new ObservableArray<any>();
 
+  codeTypes = new ObservableArray<CodeType>();
+
   constructor(public service: GraphqlService) { }
 
   ngOnInit(): void {
@@ -51,7 +54,9 @@ export class MainComponent implements OnInit, OnDestroy {
 
     this.repositoresTraceList.subscribe();
 
-    this.codeTypeList.subscribe();
+    this.codeTypes.subscribe();
+
+    this.initCodeTypes();
 
     // Info relatives au compte
 
@@ -74,12 +79,13 @@ export class MainComponent implements OnInit, OnDestroy {
         repositories.forEach((repository: any) => {
 
           // Total de commits par repository
-
-          const repositoryTrace = {name:repository.name,isPrivate:repository.isPrivate,owner:repository.owner.login}
+          const remasteredDescription = repository.description.replace(":bomb:","")
+          const repositoryTrace = {name:repository.name,description:remasteredDescription,isPrivate:repository.isPrivate,owner:repository.owner.login}
 
           this.repositoresTraceList.push(repositoryTrace)
           
         });
+
 
           // Sources du repository    
           this.repositoresTraceList.forEach(repos => {
@@ -106,12 +112,9 @@ export class MainComponent implements OnInit, OnDestroy {
                 filePathList.subscribe();
           
                 fileList.subscribe();
-          
+                console.log(repos)
                 this.getMainFolderSources(repos.name,pathList,filePathList,fileList)
-
-                
-          
-                this.repositoriesList.push({name:repos.name, srcList:filePathList, fileList:fileList})
+                this.repositoriesList.push({name:repos.name,description:repos.description,srcList:filePathList, fileList:fileList})
               }
             }      
           }) 
@@ -119,37 +122,26 @@ export class MainComponent implements OnInit, OnDestroy {
     });
   }
 
+  initCodeTypes(){
+    this.codeTypeList.push({name:"DOS Batch",extension:"bat",bytes:0})
+    this.codeTypeList.push({name:"Assambly",extension:"asm",bytes:0})
+    this.codeTypeList.push({name:"C++",extension:"h",bytes:0})
+    this.codeTypeList.push({name:"C",extension:"c",bytes:0})
+    this.codeTypeList.push({name:"Unattributed",extension:"",bytes:0})
+  }
   getLanguagesData(file: any) {
-
-    console.log(file)
-    const typeFile = file.name.split(".")[file.name.split(".").length - 1]
-    console.log(typeFile)
-    this.codeTypeList.push({ name: typeFile })
-    /*
-    let typeIsNew = true
-    let existingTypCodeLocationCounter = 0
-    let existingTypCodeLocation: number
-    this.codeTypeList.forEach(typeCode => {
-      console.log("typeCheck : " + typeCode.type, "maybeNewType : " + typeFile)
-      console.log(typeCode.type == typeFile)
-      if (typeCode.type == typeFile) {
-        typeIsNew = false
-        existingTypCodeLocation = existingTypCodeLocationCounter
+    let splitedName = file.name.split(".")
+    let typeName = splitedName[splitedName.length - 1]
+    this.codeTypeList.forEach((codeType : CodeType)=>{
+      if (codeType.extension==typeName)
+      {
+        codeType.bytes += file.size
       }
-      existingTypCodeLocationCounter += 1
-
-      if (typeIsNew) {
-        const newCodeType = { type: typeFile, bytes: fileSize }
-        this.codeTypeList.push(newCodeType)
+      else if(codeType.extension=="")
+      {
+        codeType.bytes += file.size
       }
-      else {
-        console.log(this.codeTypeList[existingTypCodeLocationCounter - 1].bytes + " + " + fileSize + " = " + (this.codeTypeList[existingTypCodeLocationCounter - 1].bytes + fileSize))
-        this.codeTypeList[existingTypCodeLocationCounter - 1].bytes = this.codeTypeList[existingTypCodeLocationCounter - 1].bytes + fileSize
-      }
-
-    });*/
-
-    //faire en sorte d'incrémenter la mémoire d'un langage déjà existant
+    })
   }
 
   getFilesData(repositoryName: string, path: string, fileList:ObservableArray<any>) {
