@@ -130,12 +130,30 @@
     <h1 class="name">Repositories</h1>
     <ul>
       <li *ngFor="let repository of repositoriesList">
-        {{repository.name}} <span><mat-icon style="color: rgb(10, 175, 10);">check</mat-icon></span>
-        <br/>
-        &nbsp;<p>{{repository.description}}</p>
+        <button class="accordion">{{repository.name}} <span><mat-icon style="color: rgb(10, 175, 10);">check</mat-icon></span> </button>
+        <div class="panel">
+            <p>{{repository.description}}</p> 
+        </div>
       </li>
     </ul>
   </div>
 
   
 </div>
+
+<script>
+  var acc = document.getElementsByClassName("accordion");
+  var i;
+
+  for (i = 0; i < acc.length; i++) {
+    acc[i].addEventListener("click", function() {
+      this.classList.toggle("active");
+      var panel = this.nextElementSibling;
+      if (panel.style.display === "block") {
+        panel.style.display = "none";
+      } else {
+        panel.style.display = "block";
+      }
+    });
+  }
+</script>
