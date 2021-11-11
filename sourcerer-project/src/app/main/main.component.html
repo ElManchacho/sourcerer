@@ -135,3 +135,13 @@
     </ul>
   </li>
 </ul>
+Langages :
+<ul>
+  &nbsp;&nbsp;
+  <li *ngFor="let codeType of codeTypeList">
+    Langage : {{codeType.type}}
+    
+    Bytes : {{codeType.bytes}}
+    <br/>
+  </li>
+</ul>

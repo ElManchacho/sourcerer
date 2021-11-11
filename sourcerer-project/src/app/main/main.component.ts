@@ -30,17 +30,18 @@ export class MainComponent implements OnInit, OnDestroy {
   private getFilesDataSubscription: Subscription | undefined
 
   loading = true;
-  nom: string = "Not loaded";
+  userName: string = "Not loaded";
   dataUser: any | undefined = { repositories: "null" , following:0,followers:0};
   dataCompany: any | undefined = { organization: "null" };
-  userName: string = "Majdi";
+  userLogin: string = "Majdi";
   totalCommits: number = 0;
-  repositoryDenomination : string = "Not loaded"
   lines:number=0
   
-  repositoresNameList = new ObservableArray<string>();
+  repositoresTraceList = new ObservableArray<any>();
 
   repositoriesList =  new ObservableArray<Repository>();
+
+  codeTypeList =  new ObservableArray<any>();
 
   constructor(public service: GraphqlService) { }
 
@@ -48,15 +49,15 @@ export class MainComponent implements OnInit, OnDestroy {
 
     this.repositoriesList.subscribe();
 
-    this.repositoresNameList.subscribe();
+    this.repositoresTraceList.subscribe();
 
     // Info relatives au compte
 
-    this.getBioSubscription = this.service.getProfileData(this.userName).valueChanges.subscribe(result => {
+    this.getBioSubscription = this.service.getProfileData(this.userLogin).valueChanges.subscribe(result => {
       this.dataUser = result.data;
       this.dataUser = this.dataUser.user;
       if (this.dataUser.company) {
-        this.getCompanySubscription = this.service.getCompanyData(this.userName, this.dataUser.company).valueChanges.subscribe(resultCompany => {
+        this.getCompanySubscription = this.service.getCompanyData(this.userLogin, this.dataUser.company).valueChanges.subscribe(resultCompany => {
           this.dataCompany = resultCompany.data;
           this.dataCompany = this.dataCompany.user;
         });
@@ -65,84 +66,109 @@ export class MainComponent implements OnInit, OnDestroy {
       // Noms des repository
 
       let repositories: any | undefined;
-      this.getRepositoriesSubscription = this.service.getRepositories(this.userName, this.dataUser.repositories.totalCount).valueChanges.subscribe(resultRepositories => {
+      this.getRepositoriesSubscription = this.service.getRepositories(this.userLogin, this.dataUser.repositories.totalCount).valueChanges.subscribe(resultRepositories => {
         repositories = resultRepositories.data;
         repositories = repositories.user.repositories.nodes;
         repositories.forEach((repository: any) => {
 
           // Total de commits par repository
 
-          var commits: any | undefined;
+          const repositoryTrace = {name:repository.name,isPrivate:repository.isPrivate,owner:repository.owner.login}
 
-
-          this.getCommitsSubscription = this.service.getCommits(this.userName, repository.name).valueChanges.subscribe(numberCommits => {
-            commits = numberCommits.data;
-            commits = commits.repository.defaultBranchRef.target.history
-            this.totalCommits += commits.totalCount
-          });
-
-          const repositoryName = repository.name
-
-          this.repositoresNameList.push(repositoryName)
-
-               
+          this.repositoresTraceList.push(repositoryTrace)
           
         });
 
-        //console.log(repositoryName)
           // Sources du repository    
-          this.repositoresNameList.forEach(reposName => {
+          this.repositoresTraceList.forEach(repos => {
+            if (repos.owner.toLowerCase() == this.userLogin.toLowerCase())
+            {
+              if(!repos.isPrivate)
+              {
+                let commits: any | undefined;
 
-            const pathList = new ObservableArray<string>();
+                this.getCommitsSubscription = this.service.getCommits(this.userLogin, repos.name).valueChanges.subscribe(numberCommits => {
+                  commits = numberCommits.data;
+                  commits = commits.repository.defaultBranchRef.target.history
+                  this.totalCommits += commits.totalCount
+                });
+                
+                const pathList = new ObservableArray<string>();
 
-            const filePathList =  new ObservableArray<string>();
+                const filePathList =  new ObservableArray<string>();
 
-            const fileList = new ObservableArray<any>();
+                const fileList = new ObservableArray<any>();
 
-            pathList.subscribe();
-      
-            filePathList.subscribe();
-      
-            fileList.subscribe();
-      
-            // Sources du repository
-      
-            this.repositoryDenomination = reposName
-      
-            //this.pathList = new ObservableArray<any>();
-      
-            this.getMainFolderSources(reposName,pathList,filePathList,fileList)
-      
-            this.repositoriesList.push({name:reposName, srcList:filePathList, fileList:fileList})
-      
+                pathList.subscribe();
+          
+                filePathList.subscribe();
+          
+                fileList.subscribe();
+          
+                this.getMainFolderSources(repos.name,pathList,filePathList,fileList)
+          
+                this.repositoriesList.push({name:repos.name, srcList:filePathList, fileList:fileList})
+              }
+            }      
           }) 
       });
     });
-
-    this.repositoriesList.subscribe(repository=>{
-      console.log(repository)
-    })
   }
 
   
 
   getFilesData(repositoryName: string, path: string, fileList:ObservableArray<any>) {
-    this.getFilesDataSubscription = this.service.getFileData(this.userName, repositoryName, path).valueChanges.subscribe((file: any) => {
-      let currentFile = file.data.repository.object
+    this.getFilesDataSubscription = this.service.getFileData(this.userLogin, repositoryName, path).valueChanges.subscribe((file: any) => {
+      const currentFile = file.data.repository.object
       let currentFileLines = 0
+      let fileSize = 0
+      const fileSrc = path.split("/")
+      const nameFile = fileSrc[fileSrc.length-1]
+      const typeFile = nameFile.split(".")[nameFile.split(".").length-1]
       if(currentFile.text)
       {
-        currentFileLines = currentFile.text.split("\r\n").length
-        this.lines+=currentFileLines
+        fileSize = currentFile.byteSize
+        
+        currentFileLines = currentFile.text.split("\r\n").length + currentFile.text.split("\n\n").length
+        
+        let typeIsNew = true
+        let existingTypCodeLocationCounter = 0
+        let existingTypCodeLocation:number
+        this.codeTypeList.forEach(typeCode => {
+          console.log("typeCheck : " + typeCode.type,"maybeNewType : "+typeFile)
+          console.log(typeCode.type == typeFile)
+          if (typeCode.type == typeFile)
+          {
+            typeIsNew = false
+            existingTypCodeLocation = existingTypCodeLocationCounter
+          }
+          existingTypCodeLocationCounter +=1
+        });
+
+        if(typeIsNew)
+        {
+          const newCodeType = {type:typeFile,bytes:fileSize}
+          this.codeTypeList.push(newCodeType)
+        }
+        else{
+          console.log(existingTypCodeLocationCounter)
+          console.log(typeFile)
+          //console.log(this.codeTypeList[existingTypCodeLocation-1])
+          this.codeTypeList[existingTypCodeLocationCounter-1].bytes+=fileSize
+        }
+        //faire en sorte d'incrémenter la mémoire d'un langage déjà existant
+        
       }
-      let nameFile = path.split("/")
-      fileList.push({name:nameFile[nameFile.length-1],pathFile:path,size:currentFile.byteSyze,text:currentFile.text,lines:currentFileLines})
+      this.lines += currentFileLines
+      const fileData = {name:nameFile,pathFile:path,size:fileSize,text:currentFile.text,lines:currentFileLines}
+      fileList.push(fileData)
     })
   }
 
   getMainFolderSources(repositoryName:string,pathList:ObservableArray<string>,filePathList:ObservableArray<string>,fileList:ObservableArray<any>){
-    pathList.push("")
-    this.getMainFolderSubscription = this.service.getMainRepositoryFolder(this.userName, repositoryName).valueChanges.subscribe((repository:any) =>{
+    
+    this.getMainFolderSubscription = this.service.getMainRepositoryFolder(this.userLogin, repositoryName).valueChanges.subscribe((repository:any) =>{
+      pathList.push("")
       let repositoryContent = repository.data.repository.object.entries
       repositoryContent.forEach((content: any) => {
         if(content.type=="tree")
@@ -161,9 +187,13 @@ export class MainComponent implements OnInit, OnDestroy {
     });
   }
 
+  isType(file:any,type:string) {
+    return file.type === type;
+  }
+
   getAllFolderSources(repositoryName:string,pathList:ObservableArray<string>,filePathList:ObservableArray<string>,fileList:ObservableArray<Repository>):any {
     pathList.forEach(path=>{
-      this.getAllRepositoryFolder = this.service.getAllRepositoryFolder(this.userName,repositoryName,path).valueChanges.subscribe((subfolder:any)=>{
+      this.getAllRepositoryFolder = this.service.getAllRepositoryFolder(this.userLogin,repositoryName,path).valueChanges.subscribe((subfolder:any)=>{
         subfolder.data.repository.object.entries.forEach((entry:any) => {
           if(entry.type=="tree")
           {

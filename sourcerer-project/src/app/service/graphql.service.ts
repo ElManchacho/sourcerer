@@ -58,6 +58,10 @@ export class GraphqlService {
             repositories(first:${totalRepositories}){
               nodes{
                 name
+                isPrivate
+                owner {
+                  login
+                }
               }
             }
           }
@@ -101,24 +105,7 @@ export class GraphqlService {
                 entries {
                   name
                   type
-                  object {
-                    ... on Blob {
-                      byteSize
-                      text
-                    }
-                    ... on Tree {
-                      entries {
-                        name
-                        type
-                        path
-                        object {
-                          ... on Blob {
-                            byteSize
-                          }
-                        }
-                      }
-                    }
-                  }
+                  
                   path
                 }
               }
